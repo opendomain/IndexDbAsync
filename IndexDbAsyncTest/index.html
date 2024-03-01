@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Asyc Index DB Test</title>
+    <script id="idb-keyval.min.js">
+        function indexDbAsync(t, n) { var e = null, r = t || "keyval-store", o = n || "keyval"; function u(t) { return new Promise((function (n, e) { t.oncomplete = t.onsuccess = function () { return n(t.result) }, t.onabort = t.onerror = function () { return e(t.error) } })) } function c(t, n) { r = t, o = n; var e = indexedDB.open(t); e.onupgradeneeded = function () { return e.result.createObjectStore(n) }; var c = u(e); return function (t, e) { return c.then((function (r) { return e(r.transaction(n, t).objectStore(n)) })) } } function i() { return e || (e = c(r, o)), e } function a(t) { return (arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : i())("readonly", (function (n) { return u(n.get(t)) })) } function f(t, n) { return (arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : i())("readwrite", (function (e) { return e.put(n, t), u(e.transaction) })) } function s(t) { return (arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : i())("readwrite", (function (n) { return n.delete(t), u(n.transaction) })) } return { createStore: c, get: a, set: f, update: function (t, n) { return (arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : i())("readwrite", (function (e) { return new Promise((function (r, o) { e.get(t).onsuccess = function () { try { e.put(n(this.result), t), r(u(e.transaction)) } catch (t) { o(t) } } })) })) }, del: s, clear: function () { return (arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : i())("readwrite", (function (t) { return t.clear(), u(t.transaction) })) }, test: async function () { let t = !1, n = "testKey000", e = "testValue" + Math.floor(1e3 * Math.random()); try { await f(n, e); let r = await a(n); await s(n), r == e && (t = !0) } catch (n) { t = !1 } return t } } }
+    </script>
+    <script>
+        const _dbName = "testDb";
+        const _dbStore = "testStore";
+
+        let _indexDbAsync = null;
+
+        let elemValue = null;
+        let elmDbAccess = null;
+
+        function init() {
+            elemValue = document.getElementById("txtValue");
+            elmDbAccess = document.getElementById("txtDbAccess");
+
+            _indexDbAsync = new indexDbAsync(_dbName, _dbStore);
+        }
+
+        async function checkDbAccess() {
+            let result = await _indexDbAsync.test();
+            let dbAccessText = "No DB Access";
+            if (result) dbAccessText = "DB Access Allowed";
+            elmDbAccess.value = dbAccessText;
+        }
+
+        async function setValue() {
+            let key = "testKey";
+            let val = elemValue.value;
+
+            await _indexDbAsync.set(key, val);
+        }
+
+        async function getValue() {
+            let key = "testKey";
+
+            let val = await _indexDbAsync.get(key);
+            elemValue.value = val;
+        }
+
+    </script>
+</head>
+<body>
+    <div>
+        <button onclick="checkDbAccess()">test Db</button>
+        <label for="txtDbAccess">DB Access</label>
+        <input type="text" id="txtDbAccess" readonly="readonly" value="notSet" />
+
+    </div>
+    <div>
+        <button onclick="setValue()">Set Value</button>
+        <button onclick="getValue()">Get Value</button>
+        <label for="txtValue">Text Value</label>
+        <input type="text" id="txtValue" />
+    </div>
+    <script>
+        init();
+    </script>
+</body>
+</html>
